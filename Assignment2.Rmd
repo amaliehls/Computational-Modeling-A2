@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library(ggplot2)
+library(gridExtra)
+library(rethinking)
 ```
 
 ## In this assignment we learn how to assess rates from a binomial distribution, using the case of assessing your teachers' knowledge of CogSci
@@ -60,10 +62,10 @@ posterior_RF = unstd.posterior_RF/sum(unstd.posterior_RF)
 Data_RF=data.frame(grid=p.grid,posterior=posterior_RF,prior=prior,likelihood=likelihood_RF)
 
 #Plot the posterior
-posterior_plot_RF = ggplot(Data_RF,aes(grid,posterior))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("Knowledge of CogSci")+ylab("posterior probability")
+posterior_plot_RF = ggplot(Data_RF,aes(grid,posterior_RF))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("RF's Knowledge of CogSci")+ylab("posterior probability")
 
 #The probability that Riccardo knows more than chance (sum of the posterior where hypothesis is that he knows more than chance)
-sum(Data$posterior[Data$grid>0.5])
+sum(Data_RF$posterior[Data_RF$grid>0.5])
 
 #Quadratic approximation, instead of trying all like in grid approximation we assume that the distribution is gaussian and therefore we only need mean and SD to describe it, we test one, go in one direction - if it goes up continue if not go in the other direction until it starts to go down - we have found the mean. But if the shape assumption is not respected we get wrong results - this is also the case in frequentist statistics
 
@@ -92,7 +94,7 @@ posterior_KT = unstd.posterior_KT/sum(unstd.posterior_KT)
 
 Data_KT=data.frame(grid=p.grid,posterior=posterior_KT,prior=prior,likelihood=likelihood_KT)
 
-posterior_plot_KT = ggplot(Data_KT,aes(grid,posterior))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("Knowledge of CogSci")+ylab("posterior probability")
+posterior_plot_KT = ggplot(Data_KT,aes(grid,posterior))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("KT's Knowledge of CogSci")+ylab("posterior probability")
 
 
 #Likelihood,posterior, standardized posterior, dataframe and plot JS
@@ -104,7 +106,7 @@ posterior_JS = unstd.posterior_JS/sum(unstd.posterior_JS)
 
 Data_JS=data.frame(grid=p.grid,posterior=posterior_JS,prior=prior,likelihood=likelihood_JS)
 
-posterior_plot_JS = ggplot(Data_JS,aes(grid,posterior))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("Knowledge of CogSci")+ylab("posterior probability")
+posterior_plot_JS = ggplot(Data_JS,aes(grid,posterior))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("JS's Knowledge of CogSci")+ylab("posterior probability")
 
 #Likelihood,posterior, standardized posterior, dataframe and plot MW
 likelihood_MW = dbinom(66, size = 132, prob = p.grid)
@@ -115,11 +117,11 @@ posterior_MW = unstd.posterior_MW/sum(unstd.posterior_MW)
 
 Data_MW=data.frame(grid=p.grid,posterior=posterior_MW,prior=prior,likelihood=likelihood_MW)
 
-posterior_plot_MW = ggplot(Data_MW,aes(grid,posterior))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("Knowledge of CogSci")+ylab("posterior probability")
+posterior_plot_MW = ggplot(Data_MW,aes(grid,posterior))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("MW's Knowledge of CogSci")+ylab("posterior probability")
 
 
 #Prior plot
-prior_plot = ggplot(Data_RF,aes(grid,prior))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("Knowledge of CogSci")+ylab("posterior probability")
+prior_plot = ggplot(Data_RF,aes(grid,prior))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("Knowledge of CogSci")+ylab("prior probability")
 
 #Plot RF
 posterior_plot_RF
@@ -127,31 +129,91 @@ posterior_plot_RF
 #plot MW
 posterior_plot_MW
 
+grid.arrange(posterior_plot_RF,posterior_plot_MW)
+
 #Both plots are centred around 0.5 (chance) however Riccardos is wider - probably because he has less observations so the posterior is less sure
+
+#Prior and all four posterior plots together
+grid.arrange(prior_plot, posterior_plot_RF,posterior_plot_MW,posterior_plot_KT, posterior_plot_JS)
+
 ```
 
 3. Change the prior. Given your teachers have all CogSci jobs, you should start with a higher appreciation of their knowledge: the prior is a normal distribution with a mean of 0.8 and a standard deviation of 0.2. Do the results change (and if so how)?
 3a. Produce plots of the prior and posterior for each teacher.
 
 ```{r}
-dens_optimistic = 10000
-prior_optimistic = rnorm(dens_optimistic,0.8,0.2)
+dens_optimistic = 100
+p.grid_optmistic = seq(from=0, to=1, length.out=dens_optimistic)
+prior_optimistic = dnorm(p.grid_optmistic, 0.8, 0.2)
+
+
+plot(prior_optimistic)
+
+likelihood_RF_optimistic = dbinom(3, size = 6, prob = p.grid_optmistic)
 
 #Optimistic posterior RF
-unstd.posterior_RF_optimistic = likelihood_RF*prior_optimistic
+unstd.posterior_RF_optimistic = likelihood_RF_optimistic*prior_optimistic
 
 posterior_RF_optimistic = unstd.posterior_RF_optimistic/sum(unstd.posterior_RF_optimistic)
 
-Data_RF_optimistic=data.frame(grid=p.grid,posterior=posterior_RF_optimistic,prior=prior_optimistic,likelihood=likelihood_RF)
+Data_RF_optimistic=data.frame(grid=p.grid_optmistic,posterior=posterior_RF_optimistic,prior=prior_optimistic,likelihood=likelihood_RF_optimistic)
 
-posterior_plot_RF_optimistic = ggplot(Data_RF_optimistic,aes(grid,posterior_RF_optimistic))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior_optimistic/dens_optimistic),color='red')+xlab("Knowledge of CogSci")+ylab("posterior probability")
+posterior_plot_RF_optimistic = ggplot(Data_RF_optimistic,aes(grid,posterior_RF_optimistic))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior_optimistic/dens_optimistic),color='red')+xlab("RF's Knowledge of CogSci")+ylab("posterior probability")
 
-
+posterior_plot_RF_optimistic
 ```
 
 4. You go back to your teachers and collect more data (multiply the previous numbers by 100). Calculate their knowledge with both a uniform prior and a normal prior with a mean of 0.8 and a standard deviation of 0.2. Do you still see a difference between the results? Why?
 
 ```{r}
+likelihood_RF_100 = dbinom(300, size = 600, prob = p.grid_optmistic)
+likelihood_MW_100 = dbinom(6600, size = 13200, prob = p.grid_optmistic)
+likelihood_KT_100 = dbinom(200, size = 200, prob = p.grid_optmistic)
+likelihood_JS_100 = dbinom(160, size = 198, prob = p.grid_optmistic)
+
+#RF
+unstd.posterior_RF_100_uniform = likelihood_RF_100*prior
+posterior_RF_100_uniform = unstd.posterior_RF_100_uniform/sum(unstd.posterior_RF_100_uniform)
+Data_RF_100_uniform=data.frame(grid=p.grid_optimistic,posterior=posterior_RF_100_uniform,prior=prior,likelihood=likelihood_RF_100)
+posterior_plot_RF_100_uniform = ggplot(Data_RF_100_uniform,aes(grid,posterior_RF_100_uniform))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("RF's Knowledge of CogSci")+ylab("posterior probability")
+
+unstd.posterior_RF_100_optimistic = likelihood_RF_100*prior_optimistic
+posterior_RF_100_optimistic = unstd.posterior_RF_100_optimistic/sum(unstd.posterior_RF_100_optimistic)
+Data_RF_100_optimistic=data.frame(grid=p.grid,posterior=posterior_RF_100_optimistic,prior=prior_optimistic,likelihood=likelihood_RF_100)
+posterior_plot_RF_100_optimistic = ggplot(Data_RF_100_optimistic,aes(grid,posterior_RF_100_optimistic))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior_optimistic/dens),color='red')+xlab("RF's Knowledge of CogSci")+ylab("posterior probability")
+
+#KT
+unstd.posterior_KT_100_uniform = likelihood_KT_100*prior
+posterior_KT_100_uniform = unstd.posterior_KT_100_uniform/sum(unstd.posterior_KT_100_uniform)
+Data_KT_100_uniform=data.frame(grid=p.grid,posterior=posterior_KT_100_uniform,prior=prior,likelihood=likelihood_KT_100)
+posterior_plot_KT_100_uniform = ggplot(Data_KT_100_uniform,aes(grid,posterior_KT_100_uniform))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("KT's Knowledge of CogSci")+ylab("posterior probability")
+
+unstd.posterior_KT_100_optimistic = likelihood_KT_100*prior_optimistic
+posterior_KT_100_optimistic = unstd.posterior_KT_100_optimistic/sum(unstd.posterior_KT_100_optimistic)
+Data_KT_100_optimistic=data.frame(grid=p.grid,posterior=posterior_KT_100_optimistic,prior=prior_optimistic,likelihood=likelihood_KT_100)
+posterior_plot_KT_100_optimistic = ggplot(Data_KT_100_optimistic,aes(grid,posterior_KT_100_optimistic))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior_optimistic/dens),color='red')+xlab("KT's Knowledge of CogSci")+ylab("posterior probability")
+
+#MW
+unstd.posterior_MW_100_uniform = likelihood_MW_100*prior
+posterior_MW_100_uniform = unstd.posterior_MW_100_uniform/sum(unstd.posterior_MW_100_uniform)
+Data_MW_100_uniform=data.frame(grid=p.grid,posterior=posterior_MW_100_uniform,prior=prior,likelihood=likelihood_MW_100)
+posterior_plot_MW_100_uniform = ggplot(Data_MW_100_uniform,aes(grid,posterior_MW_100_uniform))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("MW's Knowledge of CogSci")+ylab("posterior probability")
+
+unstd.posterior_MW_100_optimistic = likelihood_MW_100*prior_optimistic
+posterior_MW_100_optimistic = unstd.posterior_MW_100_optimistic/sum(unstd.posterior_MW_100_optimistic)
+Data_MW_100_optimistic=data.frame(grid=p.grid,posterior=posterior_MW_100_optimistic,prior=prior_optimistic,likelihood=likelihood_MW_100)
+posterior_plot_MW_100_optimistic = ggplot(Data_MW_100_optimistic,aes(grid,posterior_MW_100_optimistic))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior_optimistic/dens),color='red')+xlab("MW's Knowledge of CogSci")+ylab("posterior probability")
+
+#JS
+unstd.posterior_JS_100_uniform = likelihood_JS_100*prior
+posterior_JS_100_uniform = unstd.posterior_JS_100_uniform/sum(unstd.posterior_JS_100_uniform)
+Data_JS_100_uniform=data.frame(grid=p.grid,posterior=posterior_JS_100_uniform,prior=prior,likelihood=likelihood_JS_100)
+posterior_plot_JS_100_uniform = ggplot(Data_JS_100_uniform,aes(grid,posterior_JS_100_uniform))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior/dens),color='red')+xlab("JS's Knowledge of CogSci")+ylab("posterior probability")
+
+unstd.posterior_JS_100_optimistic = likelihood_JS_100*prior_optimistic
+posterior_JS_100_optimistic = unstd.posterior_JS_100_optimistic/sum(unstd.posterior_JS_100_optimistic)
+Data_JS_100_optimistic=data.frame(grid=p.grid,posterior=posterior_JS_100_optimistic,prior=prior_optimistic,likelihood=likelihood_JS_100)
+posterior_plot_JS_100_optimistic = ggplot(Data_JS_100_optimistic,aes(grid,posterior_JS_100_optimistic))+geom_point()+geom_line()+theme_classic()+  geom_line(aes(grid,prior_optimistic/dens),color='red')+xlab("JS's Knowledge of CogSci")+ylab("posterior probability")
 
 
 
